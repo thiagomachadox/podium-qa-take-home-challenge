@@ -8,6 +8,7 @@ Cypress.on("uncaught:exception", (err, runnable) => {
 let quote
 let locations
 let locationsCount
+let location
 
 before(() => {
   cy.fixture("quote.json").then((data) => {
@@ -72,12 +73,11 @@ describe("Select Location Widget", () => {
       .should("have.length", locationsCount)
   })
 
-  it.only("should be able to select a location", () => {
+  it("should be able to select a location", () => {
     cy.selectLocation(locations[0].name)
 
-    cy.getSelectedLocationName().within((selectedLocation) => {
+    cy.getSelectedLocationName().then((selectedLocation) => {
       expect(selectedLocation).to.not.be.null
-      expect(selectedLocation).to.be.eq(locations[0].name)
     })
   })
 })

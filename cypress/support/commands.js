@@ -116,7 +116,7 @@ Cypress.Commands.add("getSelectedLocationName", () => {
 })
 
 Cypress.Commands.add("getLegalAdviceMessage", () => {
-  cy.get("@locationWidget").find("#ComposeMessage p.Legal__text")
+  return cy.get("@locationWidget").find("#ComposeMessage p.Legal__text")
 })
 
 Cypress.Commands.add("backToSelectLocation", () => {
@@ -124,7 +124,7 @@ Cypress.Commands.add("backToSelectLocation", () => {
 })
 
 Cypress.Commands.add("getNameField", () => {
-  cy.get("@formWidget").find("div.TextInput > input#Name")
+  return cy.get("@formWidget").find("div.TextInput > input#Name")
 })
 
 Cypress.Commands.add("fillName", (name) => {
@@ -132,7 +132,7 @@ Cypress.Commands.add("fillName", (name) => {
 })
 
 Cypress.Commands.add("getPhoneField", () => {
-  cy.get("@formWidget").find("div.TextInput--tel > input")
+  return cy.get("@formWidget").find("div.TextInput--tel > input")
 })
 
 Cypress.Commands.add("fillPhoneNumber", (phoneNumber) => {
@@ -150,7 +150,7 @@ Cypress.Commands.add("fillPhoneNumber", (phoneNumber) => {
 })
 
 Cypress.Commands.add("getMessageField", () => {
-  cy.get("@formWidget").find("div.TextInput--message > textarea")
+  return cy.get("@formWidget").find("div.TextInput--message > textarea")
 })
 
 Cypress.Commands.add("fillMessage", (message) => {
@@ -158,7 +158,7 @@ Cypress.Commands.add("fillMessage", (message) => {
 })
 
 Cypress.Commands.add("getSendButton", () => {
-  cy.get("@formWidget").contains("Send")
+  return cy.get("@formWidget").contains("Send")
 })
 
 Cypress.Commands.add("clickSendForm", () => {
