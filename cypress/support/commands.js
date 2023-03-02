@@ -24,15 +24,6 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-// For assertions
-Cypress.Commands.add("assertIsVisible", (selector) => {
-  cy.get(selector).should("exist").and("be.visible")
-})
-
-Cypress.Commands.add("assertIsNotVisible", (selector) => {
-  cy.get(selector).should("not.be.visible")
-})
-
 Cypress.Commands.add("getTextUsWidget", () => {
   cy.get('iframe[data-cy="podium-website-widget-iframe"][id="podium-bubble"]')
     .its("0.contentDocument.body")
