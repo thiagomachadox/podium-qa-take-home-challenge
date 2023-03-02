@@ -1,0 +1,8 @@
+AVAILABLE_LOCATIONS = [{'location_name': 'Scoreboard Sports - Bountiful',
+                        'location_address': '1402 E Main St, Lehi, UT 84043, United States'},
+                       {'location_name': 'Scoreboard Sports - Narnia',
+                        'location_address': '6680 Little Cottonwood Canyon Rd, Sandy, UT 84092, United States'},
+                       {'location_name': 'Scoreboard Sports - Orem',
+                        'location_address': '765 West State Road, American Fork, UT 84003, United States'}]
+
+PAGE_TITLE = 'All we have to decide is what to do with the time that is given us.'
