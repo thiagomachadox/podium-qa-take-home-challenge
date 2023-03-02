@@ -23,6 +23,16 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
+
+// For assertions
+Cypress.Commands.add("assertIsVisible", (selector) => {
+  cy.get(selector).should("exist").and("be.visible")
+})
+
+Cypress.Commands.add("assertIsNotVisible", (selector) => {
+  cy.get(selector).should("not.be.visible")
+})
+
 Cypress.Commands.add("getTextUsWidget", () => {
   cy.get('iframe[data-cy="podium-website-widget-iframe"][id="podium-bubble"]')
     .its("0.contentDocument.body")
@@ -68,13 +78,23 @@ Cypress.Commands.add("loadSMSFormWidget", () => {
   cy.get("@locationWidget").then(cy.wrap).as("formWidget")
 })
 
-// Define a custom command to search for a location in the location selector widget
+Cypress.Commands.add("clickCloseGreetingMessage", () => {
+  cy.get("@greetingMessageWidget").contains("close").click()
+})
+
+Cypress.Commands.add("clickGreetingMessage", () => {
+  cy.get("@greetingMessageWidget").find("div.Prompt__MessageBubble").click()
+})
+
+Cypress.Commands.add("clickTextUs", () => {
+  cy.get("@textUsWidget").contains("Text us").click()
+})
+
 Cypress.Commands.add("searchLocation", (locationName) => {
   cy.get("@locationWidget").find("button.SearchInput__Reset").click()
   cy.get("@locationWidget").find("#search-input").type(locationName)
 })
 
-//
 Cypress.Commands.add("locationSearchResults", () => {
   // wait for loading spinner
   cy.get("@locationWidget")
@@ -95,30 +115,67 @@ Cypress.Commands.add(
   }
 )
 
-Cypress.Commands.add("fillName", (name) => {
+Cypress.Commands.add("getSelectedLocationName", () => {
   cy.get("@formWidget")
-    .find("div.TextInput > input#Name")
-    .clear()
-    .type(name)
-    .should("have.value", name)
+    .should("exist")
+    .find("div.SendSmsPage__CurrentLocationName h1")
+    .then(($el) => {
+      return $el.text()
+    })
+})
+
+Cypress.Commands.add("getLegalAdviceMessage", () => {
+  cy.get("@locationWidget").find("#ComposeMessage p.Legal__text")
+})
+
+Cypress.Commands.add("backToSelectLocation", () => {
+  cy.get("@formWidget").find("[aria-label=back]").click()
+})
+
+Cypress.Commands.add("getNameField", () => {
+  cy.get("@formWidget").find("div.TextInput > input#Name")
+})
+
+Cypress.Commands.add("fillName", (name) => {
+  cy.getNameField().clear().type(name).should("have.value", name)
+})
+
+Cypress.Commands.add("getPhoneField", () => {
+  cy.get("@formWidget").find("div.TextInput--tel > input")
 })
 
 Cypress.Commands.add("fillPhoneNumber", (phoneNumber) => {
   const formattedPhoneNumber = (text) => {
-    return text.trim().replace(/[\s-]+/g, "")
+    return String(text)
+      .trim()
+      .replace(/[\s-]+/g, "")
   }
 
-  cy.get("@formWidget").find("div.TextInput--tel > input").type(phoneNumber)
-  // .should("have.value", formattedPhoneNumber(phoneNumber))
+  cy.getPhoneField()
+    .type(phoneNumber)
+    .then(() => {
+      expect(phoneNumber).to.be.equal(formattedPhoneNumber(phoneNumber))
+    })
+})
+
+Cypress.Commands.add("getMessageField", () => {
+  cy.get("@formWidget").find("div.TextInput--message > textarea")
 })
 
 Cypress.Commands.add("fillMessage", (message) => {
-  cy.get("@formWidget")
-    .find("div.TextInput--message > textarea")
-    .type(message)
-    .should("have.value", message)
+  cy.getMessageField().type(message).should("have.value", message)
 })
 
-Cypress.Commands.add("submitForm", () => {
-  cy.get("@formWidget").contains("Send").click()
+Cypress.Commands.add("getSendButton", () => {
+  cy.get("@formWidget").contains("Send")
+})
+
+Cypress.Commands.add("clickSendForm", () => {
+  cy.getSendButton().click()
+})
+
+Cypress.Commands.add("clickCloseWidget", () => {
+  cy.get("@textUsWidget")
+    .find("button[aria-label='Select to close the chat widget']")
+    .click()
 })

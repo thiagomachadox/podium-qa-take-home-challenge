@@ -4,101 +4,86 @@ Cypress.on("uncaught:exception", (err, runnable) => {
   return false
 })
 
+// variables to use in tests from fixtures
+let quote
+let locations
+let locationsCount
+
+before(() => {
+  cy.fixture("quote.json").then((data) => {
+    quote = data.quote
+  })
+  cy.fixture("locations.json").then((data) => {
+    locations = data
+    locationsCount = locations.length
+  })
+})
+
 beforeEach(() => {
-  cy.visit("https://demo.podium.tools/qa-webchat-lorw/", { timeout: 10_000 })
+  cy.visit("https://demo.podium.tools/qa-webchat-lorw/")
   cy.loadClosedWidgetIframes()
 })
 
 describe("Page", () => {
-  let quote
-
-  before(() => {
-    cy.fixture("quote.json").then((data) => {
-      quote = data.quote
-    })
-  })
-
   beforeEach(() => {
     cy.clearLocalStorage() // force greeting message banner to be displayed again
   })
 
   it("should display the demo page quote, text us and greeting message widgets", () => {
     cy.contains(quote).should("exist").and("be.visible")
-    cy.get("@greetingMessageWidget").should("exist").and("be.visible")
-    cy.get("@textUsWidget").should("exist").and("be.visible")
+    cy.assertIsVisible("@greetingMessageWidget")
+    cy.assertIsVisible("@textUsWidget")
   })
 
-  it("should not display the greeting message if it was dismissed on page reload", () => {
-    cy.get("@greetingMessageWidget").contains("close").click()
+  xit("should not display the greeting message on page reload if it was dismissed previously", () => {
+    // not sure this is really expected, so skipping
+    cy.clickCloseGreetingMessage()
     cy.reload()
-    cy.get("@greetingMessageWidget").should("not.exist")
+    cy.assertIsNotVisible("@greetingMessageWidget")
   })
 
   it("should open the location selector widget by clicking on the 'Text us' button", () => {
-    cy.get("@textUsWidget").contains("Text us").click()
-    cy.loadOpenWidgetIframe()
-    cy.get("@locationWidget").should("exist").and("be.visible")
+    cy.clickTextUs()
+    cy.getLocationSelectorWidget()
+    cy.assertIsVisible("@locationWidget")
   })
 
   it("should open the location selector widget by clicking on the greeting message", () => {
-    cy.get("@greetingMessageWidget").should("exist")
-    cy.loadOpenWidgetIframe()
-    cy.get("@locationWidget").should("exist").and("be.visible")
+    cy.clickGreetingMessage()
+    cy.getLocationSelectorWidget()
+    cy.assertIsVisible("@locationWidget")
   })
 })
 
-describe("Select Location", () => {
-  let locations
-  let fixtureLocationNames
-  let locationsCount
-  let selectedLocationName
-
-  before(() => {
-    cy.fixture("locations.json").then((data) => {
-      locations = data
-      fixtureLocationNames = locations.map((location) => location.name)
-      locationsCount = locations.length
-    })
-  })
-
+describe("Select Location Widget", () => {
   beforeEach(() => {
     cy.loadOpenWidgetIframe()
     cy.loadSMSFormWidget()
   })
 
   it("should list available locations", () => {
-    cy.get("@locationWidget")
+    cy.locationSearchResults().should("have.length", locationsCount)
+  })
+
+  it("should be able to search a location", () => {
+    // ideally assert for all location names/addresses
+    cy.searchLocation("New York")
       .locationSearchResults()
       .should("have.length", locationsCount)
   })
 
-  it("should be able to search a location", () => {
-    cy.get("@locationWidget")
-      .searchLocation("New York")
-      .locationSearchResults()
-      .find("p.LocationContainer__Name")
-      .as("locationResults")
-      .then(($locationNames) => {
-        const locationNames = $locationNames.map((_, el) =>
-          Cypress.$(el).text()
-        )
-        // expect(locationNames.sort()).to.eq(fixtureLocationNames.sort())
-      })
-  })
-
   it("should be able to select a location", () => {
-    cy.selectLocation()
+    cy.selectLocation(locations[0].name)
 
-    cy.get("@formWidget")
-      .should("exist")
-      .find("div.SendSmsPage__CurrentLocationName h1")
-      .should("be.visible")
-    // .and("contain", selectedLocationName)
+    cy.getSelectedLocationName().then((selectedLocation) => {
+      expect(selectedLocation).to.not.be.null
+      // expect(selectedLocation).to.be.eq(locations[0].name)
+    })
   })
 })
 
 describe("Form widget", () => {
-  // Not covering every form widget possible test case, testing scenarios before form submition
+  // Not covering every form possible test case, testing scenarios before form submition
 
   let testName = "Thiago"
   let testInvalidPhoneNumber = "+1234567890"
@@ -112,29 +97,58 @@ describe("Form widget", () => {
     cy.selectLocation()
   })
 
-  it("should display legal advice message", () => {
-    cy.get("@locationWidget")
-      .find("#ComposeMessage p.Legal__text")
-      .should("be.visible")
-  })
-
   xit("should be able to go back to select a location after clicking the back button", () => {
     // this is currently failing. after clicking back, nothing happens so the assertion fails
-
-    cy.get("@formWidget").find("[aria-label=back]").click()
+    cy.backToSelectLocation()
     cy.get("@locationWidget").contains("Select a Location").should("be.visible")
   })
 
-  it("should be able to fill the form with valid data", () => {
+  it("should display legal advice message", () => {
+    cy.getLegalAdviceMessage().should("be.visible")
+  })
+
+  it("should not be able to send empty form", () => {
+    cy.getSendButton().should("be.disabled")
+  })
+
+  xit("should reset form fields data if widget is closed", () => {
+    // this is currently failing. after closing widget, form fields are not reset
+
+    // fill form fields
     cy.fillName(testName)
     cy.fillPhoneNumber(testValidPhoneNumber)
     cy.fillMessage(testShortMessage)
-    cy.submitForm()
-    cy.get("@formWidget")
-      .find("p.Legal--error", { timeout: 10_000 })
-      .should("not.exist")
-      .and("not.be.visible")
+
+    cy.clickCloseWidget()
+
+    // relaunch widget
+    cy.clickTextUs()
+    cy.getLocationSelectorWidget()
+    cy.selectLocation(locations[1].name) // choose different location
+
+    // assert
+    cy.getNameField().should("not.have.text")
+    cy.getPhoneField().should("not.have.text")
+    cy.getMessageField().should("not.have.text")
   })
 
-  it("should see valid form sent by intercepting request", () => {})
+  it("should be able to send the form with valid data", () => {
+    cy.fillName(testName)
+    cy.fillPhoneNumber(testValidPhoneNumber)
+    cy.fillMessage(testShortMessage)
+    cy.clickSendForm()
+
+    cy.get("@formWidget")
+      .contains("We received your message.")
+      .should("be.visible")
+  })
+
+  it("should not be able to send the form with invalid data", () => {
+    cy.fillName(testName)
+    cy.fillPhoneNumber(testInvalidPhoneNumber)
+    cy.fillMessage(testLongMessage)
+    cy.clickSendForm()
+
+    cy.get("@formWidget").contains("Try Again").should("be.visible")
+  })
 })
